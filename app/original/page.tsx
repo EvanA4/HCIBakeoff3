@@ -2,12 +2,14 @@
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
 function Home() {
-  const MapWrapper = useMemo(
+  const Original = useMemo(
     () =>
-      dynamic(() => import("@/components/prototypes/one/original"), {
+      dynamic(() => import("@/components/prototypes/original"), {
         loading: () => (
           <div className="w-full h-full bg-white flex items-center justify-center">
             <p className="text-2xl">
@@ -25,7 +27,19 @@ function Home() {
     [],
   );
 
-  return <MapWrapper />;
+  const searchParams = useSearchParams()
+  let dpi = 0;
+  try {
+    const dpiStr = searchParams.get('dpi');
+    if (dpiStr === null) {
+      throw new Error("Invalid DPI in search parameters!");
+    }
+    dpi = parseInt(dpiStr);
+  } catch {
+    return <Link href="/" className="p-3 bg-neutral-200 hover:bg-neutral-300 active:bg-neutral-300 rounded-2xl">Invalid DPI. Click here to return to home.</Link>;
+  }
+
+  return <Original dpi={dpi}/>;
 }
 
 export default Home;

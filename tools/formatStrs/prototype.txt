@@ -2,13 +2,15 @@ import { computeLevenshteinDistance } from "@/utils/levenshtein";
 import { phrases } from "@/utils/phrases";
 import p5 from "p5";
 
-export default function UPPER_PROTO_NAME() {
+export default function UPPER_PROTO_NAME(props: {
+    dpi: number
+}) {
     const protoFn = (p5: p5) => {
         /* START OF PROTOTYPE CODE */
         
 
 
-        const DPIofYourDeviceScreen = 110; //you will need to measure or look up the DPI or PPI of your device/browser to make sure you get the right scale!!
+        const DPIofYourDeviceScreen = props.dpi; //you will need to measure or look up the DPI or PPI of your device/browser to make sure you get the right scale!!
         const sizeOfInputArea = DPIofYourDeviceScreen*1; //aka, 1.0 inches square!
 
         const totalTrialNum = 2; //the total number of phrases to be tested - set this low for testing. Might be ~10 for the real bakeoff!
