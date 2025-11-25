@@ -135,15 +135,11 @@ export default function Proto2(props: {
 
                 //my draw code
                 if (stage == 0) {
-                    p5.strokeWeight(0);
-                    p5.textAlign(p5.CENTER, p5.CENTER);
-                    p5.fill(0);
-
                     page1ButtonPoses.forEach((pos, idx) => {
                         switch (idx) {
                             case 3:
-                                p5.stroke(0, 0, 0); 
-                                p5.strokeWeight(1);
+                                p5.stroke(0); 
+                                p5.strokeWeight(.5);
                                 p5.fill(200);
                                 p5.rect(pos[0], pos[1], pos[2], pos[3]);
 
@@ -153,8 +149,8 @@ export default function Proto2(props: {
                                 p5.text('space', pos[0], pos[1], pos[2], pos[3]);
                                 break;
                             case 4:
-                                p5.stroke(0, 0, 0); 
-                                p5.strokeWeight(1);
+                                p5.stroke(0); 
+                                p5.strokeWeight(.5);
                                 p5.fill(200, 100, 100);
                                 p5.rect(pos[0], pos[1], pos[2], pos[3]);
 
@@ -165,8 +161,8 @@ export default function Proto2(props: {
                                 break;
                             default:
                                 const letter = letterBank[idx];
-                                p5.stroke(0, 0, 0); 
-                                p5.strokeWeight(1);
+                                p5.stroke(0); 
+                                p5.strokeWeight(.5);
                                 p5.fill(240);
                                 p5.rect(pos[0], pos[1], pos[2], pos[3]);
 
@@ -183,7 +179,7 @@ export default function Proto2(props: {
                 } else {
                     page2ButtonPoses.forEach((pos, idx)=> {
                         p5.stroke(0); 
-                        p5.strokeWeight(1);
+                        p5.strokeWeight(.5);
                         p5.fill(240);
                         p5.rect(pos[0], pos[1], pos[2], pos[3]);
 
