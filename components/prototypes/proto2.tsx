@@ -25,7 +25,7 @@ export default function Proto2(props: {
         let currentTyped = ""; //what the user has typed so far
 
         // Variables for this prototype
-        const letterBank = ["a e i o u y", "b c d f g h j k l m", "n p q r s t v w x z"];
+        const letterBank = ["A E I O U Y", "B C D F G H J K L M", "N P Q R S T V W X Z"];
         let page1ButtonPoses: number[][];
         let page2ButtonPoses: number[][];
         let stage = -1; // 0 = page 1, 1 = page 2
@@ -226,7 +226,7 @@ export default function Proto2(props: {
                 page2ButtonPoses.forEach((pos, idx) => {
                     if (didMouseClick(pos[0], pos[1], pos[2], pos[3])) {
                         if (letterBank[group - 1].length/2 > idx) {
-                            currentTyped += letterBank[group - 1][idx * 2];
+                            currentTyped += letterBank[group - 1][idx * 2].toLowerCase();
                             stage = 0;
                         } else {
                             console.log("Error: Button index is out of bounds");
