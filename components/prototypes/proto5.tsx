@@ -7,8 +7,6 @@ export default function Proto5(props: {
 }) {
     const protoFn = (p5: p5) => {
         /* START OF PROTOTYPE CODE */
-        
-
 
         const DPIofYourDeviceScreen = props.dpi; //you will need to measure or look up the DPI or PPI of your device/browser to make sure you get the right scale!!
         const sizeOfInputArea = DPIofYourDeviceScreen*1; //aka, 1.0 inches square!
@@ -26,6 +24,41 @@ export default function Proto5(props: {
 
         //Variables for my silly implementation. You can delete this:
         let currentLetter = 'a'.charCodeAt(0);
+
+        // Scroll wheel to change letter
+        const numOfLetters = 28;
+        let isScrolling = false;
+        let lastMouseX = 0;
+        let scrollMoved = 0;
+        const pixelsPerStep = 5; // adjust afterwards
+
+        // Move to the next/previous letter
+        function moveLetter(steps: number) {
+            const step = steps > 0 ? 1 : -1;
+            const count = Math.abs(steps);
+            for (let i = 0; i < count; i++) {
+                if (step > 0) {
+                    if (currentLetter >= "z".charCodeAt(0)) {
+                        currentLetter = '_'.charCodeAt(0); 
+                    } else {
+                        currentLetter++;
+                    }
+                } else {
+                    if (currentLetter <= "_".charCodeAt(0)) {
+                        currentLetter = "z".charCodeAt(0);
+                    } else {
+                        currentLetter--;
+                    }
+                }
+            }
+        }
+
+        function letterIndex(letterCode: number): number {
+            if (letterCode === "_".charCodeAt(0)) return 0;
+            if (letterCode === "`".charCodeAt(0)) return 1;
+
+            return 2 + (letterCode - "a".charCodeAt(0));
+        }
 
         //You can add stuff in here. This is just a basic implementation.
         p5.setup = () => {
@@ -102,14 +135,50 @@ export default function Proto5(props: {
                 p5.fill(255);
                 p5.text("NEXT > ", window.innerWidth - 150, window.innerHeight - 150); //draw next label
 
-                //my draw code that you should replace.
-                p5.fill(255, 0, 0); //red button
-                p5.rect(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw left red button
-                p5.fill(0, 255, 0); //green button
-                p5.rect(p5.width/2-sizeOfInputArea/2+sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw right green button
-                p5.textAlign(p5.CENTER);
-                p5.fill(200);
-                p5.text(String.fromCharCode(currentLetter), p5.width/2, p5.height/2-sizeOfInputArea/4); //draw current letter
+                // scroll wheel 
+                const watchX = p5.width/2 - sizeOfInputArea/2;
+                const watchY = p5.height/2 - sizeOfInputArea/2;
+                const cx = watchX + sizeOfInputArea / 2;
+                const cy = watchY + sizeOfInputArea  * 0.3;
+                const displayChar = String.fromCharCode(currentLetter);
+
+                p5.textAlign(p5.CENTER, p5.CENTER);
+                p5.textSize(32);
+                p5.fill(0);
+                p5.text(displayChar, cx, cy);
+
+                p5.textSize(16);
+                p5.fill(150);
+
+                const original = currentLetter;
+                moveLetter(-1);
+                const leftChar = String.fromCharCode(currentLetter);
+                p5.text(leftChar, cx - 40, cy);
+                currentLetter = original;
+
+                moveLetter(1);
+                const rightChar = String.fromCharCode(currentLetter);
+                p5.text(rightChar, cx + 40, cy);
+                currentLetter = original;
+
+                const trackY = watchY + sizeOfInputArea * 0.7;
+                const leftTrack = watchX + 10;
+                const rightTrack = watchX + sizeOfInputArea - 10;
+
+                p5.stroke(180);
+                p5.strokeWeight(2);
+                p5.line(leftTrack, trackY, rightTrack, trackY);
+                p5.noStroke();
+
+                const index = letterIndex(currentLetter);
+                const point = numOfLetters > 1 ? index / (numOfLetters - 1) : 0.5;
+                const handleX = p5.lerp(leftTrack, rightTrack, point);
+
+                p5.fill(220);
+                p5.ellipse(handleX, trackY, 16, 16);
+
+                p5.textSize(16);
+                p5.textAlign(p5.LEFT, p5.CENTER);
             }
         }
 
@@ -121,31 +190,27 @@ export default function Proto5(props: {
 
         //you can replace all of this logic.
         p5.mousePressed = () => {
-            if (didMouseClick(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2)) //check if click in left button
-            {
-                if (currentLetter<=95) //wrap around to z
-                currentLetter = 'z'.charCodeAt(0);
-            else
-                currentLetter--;
-            }
+            const watchX = p5.width/2 - sizeOfInputArea/2;
+            const watchY = p5.height/2 - sizeOfInputArea/2;
 
-            if (didMouseClick(p5.width/2-sizeOfInputArea/2+sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2)) //check if click in right button
-            {
+            if (startTime != 0 && finishTime == 0) {
+                if (didMouseClick(watchX, watchY, sizeOfInputArea, sizeOfInputArea / 2)) {
+                    if (currentLetter == "_".charCodeAt(0)) {
+                        currentTyped = currentTyped + " ";
+                    } else if (currentLetter == "`".charCodeAt(0) && currentTyped.length > 0) {
+                        currentTyped = currentTyped.substring(0, currentTyped.length - 1);
+                    } else if (currentLetter != "`".charCodeAt(0)) {
+                        currentTyped = currentTyped + String.fromCharCode(currentLetter);
+                    }
+                    return;
+                }
 
-                if (currentLetter>=122) //wrap back to space (aka underscore)
-                currentLetter = '_'.charCodeAt(0);
-            else
-                currentLetter++;
-            }
-
-            if (didMouseClick(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2, sizeOfInputArea, sizeOfInputArea/2)) //check if click occured in letter area
-            {
-                if (currentLetter=='_'.charCodeAt(0)) //if underscore, consider that a space bar
-                currentTyped = currentTyped + " ";
-                else if (currentLetter=='`'.charCodeAt(0) && currentTyped.length>0) //if `, treat that as a delete command
-                currentTyped = currentTyped.substring(0, currentTyped.length-1);
-                else if (currentLetter!='`'.charCodeAt(0)) //if not any of the above cases, add the current letter to the typed string
-                currentTyped = currentTyped + String.fromCharCode(currentLetter);
+                if (didMouseClick(watchX, watchY + sizeOfInputArea / 2, sizeOfInputArea, sizeOfInputArea / 2)) {
+                    isScrolling = true;
+                    lastMouseX = p5.mouseX;
+                    scrollMoved = 0;
+                    return;
+                }
             }
 
             //You are allowed to have a next button outside the 1" area
@@ -155,6 +220,28 @@ export default function Proto5(props: {
             }
         }
 
+        // mouse dragged 
+        p5.mouseDragged = () => {
+            if (!isScrolling || startTime == 0 || finishTime != 0) return;
+
+            const deltaX = p5.mouseX - lastMouseX;
+            lastMouseX = p5.mouseX;
+            scrollMoved += deltaX;
+
+            while (scrollMoved >= pixelsPerStep) {
+                moveLetter(1);
+                scrollMoved -= pixelsPerStep;
+            }
+            while (scrollMoved <= -pixelsPerStep) {
+                moveLetter(-1);
+                scrollMoved += pixelsPerStep;
+            }
+        }
+
+        // mouse released 
+        p5.mouseReleased = () => {
+            isScrolling = false;
+        }
 
         function nextTrial() {
             if (currTrialNum >= totalTrialNum) //check to see if experiment is done
