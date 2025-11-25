@@ -2,7 +2,7 @@ import { computeLevenshteinDistance } from "@/utils/levenshtein";
 import { phrases } from "@/utils/phrases";
 import p5 from "p5";
 
-export default function Proto1(props: {
+export default function Proto2(props: {
     dpi: number
 }) {
     const protoFn = (p5: p5) => {
@@ -24,8 +24,12 @@ export default function Proto1(props: {
         let currentPhrase = ""; //the current target phrase
         let currentTyped = ""; //what the user has typed so far
 
-        //Variables for my silly implementation. You can delete this:
-        let currentLetter = 'a'.charCodeAt(0);
+        // Variables for this prototype
+        const letterBank = ["A B C D", "E F G H", "I J K L", "M N O P", "Q R S T", "U V W X", "Y Z"];
+        let page1ButtonPoses: number[][];
+        let page2ButtonPoses: number[][];
+        let stage = -1; // 0 = page 1, 1 = page 2
+        let group = -1; // 1 = vowels, 2 = first half of consonants, 3 = second half of consonants
 
         //You can add stuff in here. This is just a basic implementation.
         p5.setup = () => {
@@ -40,6 +44,27 @@ export default function Proto1(props: {
                 phrases[i] = phrases[r];
                 phrases[r] = temp;
             }
+
+            page1ButtonPoses = [
+                [p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2, sizeOfInputArea/3, sizeOfInputArea/3],
+                [p5.width/2-sizeOfInputArea/2+sizeOfInputArea/3, p5.height/2-sizeOfInputArea/2, sizeOfInputArea/3, sizeOfInputArea/3],
+                [p5.width/2-sizeOfInputArea/2+2*sizeOfInputArea/3, p5.height/2-sizeOfInputArea/2, sizeOfInputArea/3, sizeOfInputArea/3],
+                
+                [p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/3, sizeOfInputArea/3, sizeOfInputArea/3],
+                [p5.width/2-sizeOfInputArea/2+sizeOfInputArea/3, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/3, sizeOfInputArea/3, sizeOfInputArea/3],
+                [p5.width/2-sizeOfInputArea/2+2*sizeOfInputArea/3, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/3, sizeOfInputArea/3, sizeOfInputArea/3],
+                
+                [p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+2*sizeOfInputArea/3, sizeOfInputArea/3, sizeOfInputArea/3],
+                [p5.width/2-sizeOfInputArea/2+sizeOfInputArea/3, p5.height/2-sizeOfInputArea/2+2*sizeOfInputArea/3, sizeOfInputArea/3, sizeOfInputArea/3],
+                [p5.width/2-sizeOfInputArea/2+2*sizeOfInputArea/3, p5.height/2-sizeOfInputArea/2+2*sizeOfInputArea/3, sizeOfInputArea/3, sizeOfInputArea/3],
+            ]
+
+            page2ButtonPoses = [
+                [p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2],
+                [p5.width/2, p5.height/2-sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2],
+                [p5.width/2-sizeOfInputArea/2, p5.height/2, sizeOfInputArea/2, sizeOfInputArea/2],
+                [p5.width/2, p5.height/2, sizeOfInputArea/2, sizeOfInputArea/2],
+            ]
         }
 
         //You can modify stuff in here. This is just a basic implementation.
@@ -82,6 +107,7 @@ export default function Proto1(props: {
 
             if (startTime==0 && p5.mouseIsPressed)
             {
+                stage = 0; 
                 nextTrial(); //start the trials!
             }
 
@@ -102,14 +128,67 @@ export default function Proto1(props: {
                 p5.fill(255);
                 p5.text("NEXT > ", window.innerWidth - 150, window.innerHeight - 150); //draw next label
 
-                //my draw code that you should replace.
-                p5.fill(255, 0, 0); //red button
-                p5.rect(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw left red button
-                p5.fill(0, 255, 0); //green button
-                p5.rect(p5.width/2-sizeOfInputArea/2+sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw right green button
-                p5.textAlign(p5.CENTER);
-                p5.fill(200);
-                p5.text(String.fromCharCode(currentLetter), p5.width/2, p5.height/2-sizeOfInputArea/4); //draw current letter
+                //my draw code
+                if (stage == 0) {
+                    page1ButtonPoses.forEach((pos, idx) => {
+                        switch (idx) {
+                            case 7:
+                                p5.stroke(0); 
+                                p5.strokeWeight(.5);
+                                p5.fill(200);
+                                p5.rect(pos[0], pos[1], pos[2], pos[3]);
+
+                                p5.strokeWeight(0);
+                                p5.textAlign(p5.CENTER, p5.CENTER);
+                                p5.fill(0);
+                                p5.text('space', pos[0], pos[1], pos[2], pos[3]);
+                                break;
+                            case 8:
+                                p5.stroke(0); 
+                                p5.strokeWeight(.5);
+                                p5.fill(200, 100, 100);
+                                p5.rect(pos[0], pos[1], pos[2], pos[3]);
+
+                                p5.strokeWeight(0);
+                                p5.textAlign(p5.CENTER, p5.CENTER);
+                                p5.fill(0);
+                                p5.text('delete', pos[0], pos[1], pos[2], pos[3]);
+                                break;
+                            default:
+                                let option = letterBank[idx];
+                                p5.stroke(0); 
+                                p5.strokeWeight(.5);
+                                p5.fill(240);
+                                p5.rect(pos[0], pos[1], pos[2], pos[3]);
+
+                                if (option.length > 0) { // insert newline in the middle of the string
+                                    if(option.length > 3) option = option.substring(0, 3) + "\n" + option.substring(3);
+                                    p5.strokeWeight(0);
+                                    p5.textAlign(p5.CENTER, p5.CENTER);
+                                    p5.fill(0);
+                                    p5.text(option, pos[0], pos[1], pos[2], pos[3]);
+                                }
+                                break;
+                        }
+                    });
+                    p5.fill(200);
+                } else {
+                    page2ButtonPoses.forEach((pos, idx)=> {
+                        p5.stroke(0); 
+                        p5.strokeWeight(.5);
+                        p5.fill(240);
+                        p5.rect(pos[0], pos[1], pos[2], pos[3]);
+
+                        p5.strokeWeight(0);
+                        p5.textAlign(p5.CENTER, p5.CENTER);
+                        p5.fill(0);
+                        let display = ' ';
+                        if (idx < letterBank[group - 1].length/2) {
+                            display = letterBank[group - 1][idx * 2];
+                        }
+                        p5.text(display, pos[0], pos[1], pos[2], pos[3]);
+                    });
+                }
             }
         }
 
@@ -121,32 +200,36 @@ export default function Proto1(props: {
 
         //you can replace all of this logic.
         p5.mousePressed = () => {
-            if (didMouseClick(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2)) //check if click in left button
-            {
-                if (currentLetter<=95) //wrap around to z
-                currentLetter = 'z'.charCodeAt(0);
-            else
-                currentLetter--;
-            }
+            if (stage == 0 && startTime != 0 && finishTime == 0) {
+                page1ButtonPoses.forEach((pos, idx) => {
+                    if (didMouseClick(pos[0], pos[1], pos[2], pos[3])) {
+                        switch(idx) {
+                            case 7: // space
+                                currentTyped += ' ';
+                                break;
+                            case 8: // delete
+                                currentTyped = currentTyped === "" ? "" : currentTyped.substring(0, currentTyped.length - 1);
+                                break; 
+                            default: 
+                                stage = 1;
+                                group = idx + 1; // 1 = vowels, 2 = first half of consonants, 3 = second half of consonants
+                                break;
+                        }
+                    }
+                });
 
-            if (didMouseClick(p5.width/2-sizeOfInputArea/2+sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2)) //check if click in right button
-            {
-
-                if (currentLetter>=122) //wrap back to space (aka underscore)
-                currentLetter = '_'.charCodeAt(0);
-            else
-                currentLetter++;
-            }
-
-            if (didMouseClick(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2, sizeOfInputArea, sizeOfInputArea/2)) //check if click occured in letter area
-            {
-                if (currentLetter=='_'.charCodeAt(0)) //if underscore, consider that a space bar
-                currentTyped = currentTyped + " ";
-                else if (currentLetter=='`'.charCodeAt(0) && currentTyped.length>0) //if `, treat that as a delete command
-                currentTyped = currentTyped.substring(0, currentTyped.length-1);
-                else if (currentLetter!='`'.charCodeAt(0)) //if not any of the above cases, add the current letter to the typed string
-                currentTyped = currentTyped + String.fromCharCode(currentLetter);
-            }
+            } else if (stage == 1) {
+                page2ButtonPoses.forEach((pos, idx) => {
+                    if (didMouseClick(pos[0], pos[1], pos[2], pos[3])) {
+                        if (letterBank[group - 1].length/2 > idx) {
+                            currentTyped += letterBank[group - 1][idx * 2].toLowerCase();
+                            stage = 0;
+                        } else {
+                            console.log("Error: Button index is out of bounds");
+                        }
+                    }
+                });
+            } 
 
             //You are allowed to have a next button outside the 1" area
             if (didMouseClick(window.innerWidth - 200, window.innerHeight - 200, 200, 200)) //check if click is in next button
