@@ -212,7 +212,7 @@ export default function Proto2(props: {
                                 break; 
                             default: 
                                 stage = 1;
-                                group = idx + 1; // 1 = vowels, 2 = first half of consonants, 3 = second half of consonants
+                                group = idx + 1; 
                                 break;
                         }
                     }
