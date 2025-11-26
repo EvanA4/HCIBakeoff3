@@ -2,7 +2,7 @@ import { computeLevenshteinDistance } from "@/utils/levenshtein";
 import { phrases } from "@/utils/phrases";
 import p5 from "p5";
 
-export default function Proto2(props: {
+export default function Proto13(props: {
     dpi: number
 }) {
     const protoFn = (p5: p5) => {
