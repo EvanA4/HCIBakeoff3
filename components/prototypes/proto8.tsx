@@ -11,9 +11,6 @@ export default function Proto8(props: {
         
         
         // HYPERPARAMETERS
-        const dragMinDistance = 15; // default 15
-        const dragSpeed = 1; // default 1
-        
         const keyboardArrs = [
             'qwertyuiop'.split(""),
             'asdfghjkl'.split(""),
@@ -24,11 +21,8 @@ export default function Proto8(props: {
         const sizeOfInputArea = DPIofYourDeviceScreen*1; //aka, 1.0 inches square!
         
         const whiteoutBuf = 10;
-        let mouseDragStartPos = [-1, -1];
-        let doDrag = false;
-        let wasOnceDrag = false;
-        const mousePrevOffset = [0, 0];
-        let wentOutOfBounds = false;
+        const offsets = [-sizeOfInputArea*.75, 0,sizeOfInputArea*.75];
+        let offsetIdx = 1;
 
         const totalTrialNum = 2; //the total number of phrases to be tested - set this low for testing. Might be ~10 for the real bakeoff!
         let currTrialNum = 0; // the current trial number (indexes into trials array above)
@@ -105,23 +99,6 @@ export default function Proto8(props: {
             //if start time does not equal zero, it means we must be in the trials
             if (startTime!=0)
             {
-                doDrag = 
-                    isInBounds() && p5.mouseIsPressed && mouseDragStartPos[0] > 0 && 
-                    Math.pow(p5.mouseX - mouseDragStartPos[0], 2)
-                    + Math.pow(p5.mouseY - mouseDragStartPos[1], 2) 
-                    > dragMinDistance*dragMinDistance;
-                if (doDrag && !wasOnceDrag) {
-                    wasOnceDrag = true;
-                }
-                if (wasOnceDrag && !isInBounds()) {
-                    // we must have left the bounds of the 1" box!
-                    mousePrevOffset[0] += p5.mouseX - mouseDragStartPos[0];
-                    mousePrevOffset[1] += p5.mouseY - mouseDragStartPos[1];
-                    mouseDragStartPos = [-1, -1];
-                    wasOnceDrag = false;
-                    wentOutOfBounds = true;
-                }
-
                 //my draw code that you should replace.
                 // p5.rect(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw left red button
                 p5.textAlign(p5.CENTER, p5.CENTER);
@@ -136,25 +113,27 @@ export default function Proto8(props: {
                             w: sizeOfInputArea/4,
                             h: sizeOfInputArea/4
                         }
-                        const dragOffset = doDrag ? [
-                            p5.mouseX - mouseDragStartPos[0] + mousePrevOffset[0],
+                        const dragOffset = [
+                            offsets[offsetIdx],
                             0 // p5.mouseY - mouseDragStartPos[1] + mousePrevOffset[1] // there should be no Y offset
-                        ] : [mousePrevOffset[0], 0];
-                        p5.rect(keypos.x + dragOffset[0]*dragSpeed,keypos.y + dragOffset[1]*dragSpeed,keypos.w,keypos.h);
+                        ];
+                        p5.rect(keypos.x + dragOffset[0],keypos.y + dragOffset[1],keypos.w,keypos.h);
                         p5.fill(0);
                         p5.strokeWeight(0);
-                        p5.text(letter, keypos.x + keypos.w/2 + dragOffset[0]*dragSpeed, keypos.y + keypos.h/2 + dragOffset[1]*dragSpeed);
+                        p5.text(letter, keypos.x + keypos.w/2 + dragOffset[0], keypos.y + keypos.h/2 + dragOffset[1]);
                     });
                 });
 
                 p5.fill(205);
                 p5.strokeWeight(1);
                 p5.rect(p5.width/2-sizeOfInputArea/2, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4);
-                p5.rect(p5.width/2-sizeOfInputArea/4, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/2, sizeOfInputArea/4);
+                p5.rect(p5.width/2-sizeOfInputArea/4, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4);
+                p5.rect(p5.width/2, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4);
                 p5.rect(p5.width/2+sizeOfInputArea/4, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4);
-                p5.text('`', p5.width/2-sizeOfInputArea/2 + sizeOfInputArea/8, p5.height/2 + sizeOfInputArea*3/8);
-                p5.text('_', p5.width/2-sizeOfInputArea/4 + sizeOfInputArea/4, p5.height/2 + sizeOfInputArea*3/8);
-                p5.text('`', p5.width/2+sizeOfInputArea/4 + sizeOfInputArea/8, p5.height/2 + sizeOfInputArea*3/8);
+                p5.text('<', p5.width/2-sizeOfInputArea/2 + sizeOfInputArea/8, p5.height/2 + sizeOfInputArea*3/8);
+                p5.text('_', p5.width/2-sizeOfInputArea/8, p5.height/2 + sizeOfInputArea*3/8);
+                p5.text('`', p5.width/2+sizeOfInputArea/8, p5.height/2 + sizeOfInputArea*3/8);
+                p5.text('>', p5.width/2+sizeOfInputArea/4 + sizeOfInputArea/8, p5.height/2 + sizeOfInputArea*3/8);
                 p5.strokeWeight(0);
 
                 // p5.fill(200);
@@ -187,7 +166,7 @@ export default function Proto8(props: {
         {
             return (p5.mouseX > x && p5.mouseX<x+w && p5.mouseY>y && p5.mouseY<y+h); //check to see if it is in button bounds
         }
-        
+
         function isInBounds() {
             return didMouseClick(
                 p5.width/2-sizeOfInputArea/2,
@@ -197,13 +176,9 @@ export default function Proto8(props: {
             );
         }
 
-        p5.mouseReleased = () => {
-            if (doDrag) {
-                mousePrevOffset[0] += p5.mouseX - mouseDragStartPos[0];
-                mousePrevOffset[1] += p5.mouseY - mouseDragStartPos[1];
-            }
-
-            if (isInBounds() && !wasOnceDrag && !wentOutOfBounds) {
+        //you can replace all of this logic.
+        p5.mousePressed = () => {
+            if (isInBounds()) {
                 let charToAdd = '';
                 for (let rowNum = 0; rowNum < keyboardArrs.length && charToAdd === ''; ++rowNum) {
                     const row = keyboardArrs[rowNum];
@@ -215,11 +190,11 @@ export default function Proto8(props: {
                             w: sizeOfInputArea/4,
                             h: sizeOfInputArea/4
                         };
-                        const dragOffset = doDrag ? [
-                            p5.mouseX - mouseDragStartPos[0] + mousePrevOffset[0],
+                        const dragOffset = [
+                            offsets[offsetIdx],
                             0 // p5.mouseY - mouseDragStartPos[1] + mousePrevOffset[1] // there should be no Y offset
-                        ] : [mousePrevOffset[0], 0];
-                        if (didMouseClick(keypos.x + dragOffset[0]*dragSpeed,keypos.y + dragOffset[1]*dragSpeed,keypos.w,keypos.h)) {
+                        ];
+                        if (didMouseClick(keypos.x + dragOffset[0],keypos.y + dragOffset[1],keypos.w,keypos.h)) {
                             charToAdd = letter;
                         }
                     }
@@ -227,26 +202,17 @@ export default function Proto8(props: {
                 currentTyped += charToAdd;
             }
 
-            if (
-                didMouseClick(p5.width/2-sizeOfInputArea/2, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4) ||
-                didMouseClick(p5.width/2+sizeOfInputArea/4, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4)
-            ) {
-                currentTyped = currentTyped.substring(0, currentTyped.length - 1);
+            if (didMouseClick(p5.width/2-sizeOfInputArea/2, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4)) {
+                offsetIdx = (offsetIdx + 1) % 3;
             }
-            if (didMouseClick(p5.width/2-sizeOfInputArea/4, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/2, sizeOfInputArea/4)) {
+            if (didMouseClick(p5.width/2-sizeOfInputArea/4, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4)) {
                 currentTyped += ' ';
             }
-            
-            mouseDragStartPos = [-1, -1];
-            wasOnceDrag = false;
-            wentOutOfBounds = false;
-        }
-
-
-        //you can replace all of this logic.
-        p5.mousePressed = () => {
-            if (isInBounds()) {
-                mouseDragStartPos = [p5.mouseX, p5.mouseY];
+            if (didMouseClick(p5.width/2, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4)) {
+                currentTyped = currentTyped.substring(0, currentTyped.length - 1);
+            }
+            if (didMouseClick(p5.width/2+sizeOfInputArea/4, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4)) {
+                offsetIdx = (offsetIdx + 2) % 3;
             }
 
             //You are allowed to have a next button outside the 1" area
