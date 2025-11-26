@@ -12,7 +12,7 @@ export default function Proto8(props: {
         
         // HYPERPARAMETERS
         const dragMinDistance = 15; // default 15
-        const dragSpeed = 1; // default 1
+        const dragSpeed = 2; // default 1
         
         const keyboardArrs = [
             'qwertyuiop'.split(""),

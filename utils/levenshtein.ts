@@ -15,7 +15,6 @@ export function computeLevenshteinDistance(phrase1: string, phrase2: string) //t
         distance[i][0] = i;
     for (let j = 1; j <= phrase2.length; j++)
         distance[0][j] = j;
-    console.log(distance);
 
     for (let i = 1; i <= phrase1.length; i++)
         for (let j = 1; j <= phrase2.length; j++)
