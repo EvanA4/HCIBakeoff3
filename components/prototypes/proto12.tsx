@@ -13,7 +13,7 @@ type Key = {
     isDelete: boolean;
 }
 
-export default function Proto4(props: {
+export default function Proto12(props: {
     dpi: number
 }) {
     const protoFn = (p5: p5) => {
