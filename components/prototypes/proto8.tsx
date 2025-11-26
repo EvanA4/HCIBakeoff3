@@ -8,10 +8,27 @@ export default function Proto8(props: {
     const protoFn = (p5: p5) => {
         /* START OF PROTOTYPE CODE */
         
-
-
+        
+        
+        // HYPERPARAMETERS
+        const dragMinDistance = 15; // default 15
+        const dragSpeed = 1; // default 1
+        
+        const keyboardArrs = [
+            'qwertyuiop'.split(""),
+            'asdfghjkl'.split(""),
+            'zxcvbnm'.split("")
+        ]
+        
         const DPIofYourDeviceScreen = props.dpi; //you will need to measure or look up the DPI or PPI of your device/browser to make sure you get the right scale!!
         const sizeOfInputArea = DPIofYourDeviceScreen*1; //aka, 1.0 inches square!
+        
+        const whiteoutBuf = 10;
+        let mouseDragStartPos = [-1, -1];
+        let doDrag = false;
+        let wasOnceDrag = false;
+        const mousePrevOffset = [0, 0];
+        let wentOutOfBounds = false;
 
         const totalTrialNum = 2; //the total number of phrases to be tested - set this low for testing. Might be ~10 for the real bakeoff!
         let currTrialNum = 0; // the current trial number (indexes into trials array above)
@@ -25,7 +42,7 @@ export default function Proto8(props: {
         let currentTyped = ""; //what the user has typed so far
 
         //Variables for my silly implementation. You can delete this:
-        let currentLetter = 'a'.charCodeAt(0);
+        // let currentLetter = 'a'.charCodeAt(0);
 
         //You can add stuff in here. This is just a basic implementation.
         p5.setup = () => {
@@ -88,6 +105,68 @@ export default function Proto8(props: {
             //if start time does not equal zero, it means we must be in the trials
             if (startTime!=0)
             {
+                doDrag = 
+                    isInBounds() && p5.mouseIsPressed && mouseDragStartPos[0] > 0 && 
+                    Math.pow(p5.mouseX - mouseDragStartPos[0], 2)
+                    + Math.pow(p5.mouseY - mouseDragStartPos[1], 2) 
+                    > dragMinDistance*dragMinDistance;
+                if (doDrag && !wasOnceDrag) {
+                    wasOnceDrag = true;
+                }
+                if (wasOnceDrag && !isInBounds()) {
+                    // we must have left the bounds of the 1" box!
+                    mousePrevOffset[0] += p5.mouseX - mouseDragStartPos[0];
+                    mousePrevOffset[1] += p5.mouseY - mouseDragStartPos[1];
+                    mouseDragStartPos = [-1, -1];
+                    wasOnceDrag = false;
+                    wentOutOfBounds = true;
+                }
+
+                //my draw code that you should replace.
+                // p5.rect(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw left red button
+                p5.textAlign(p5.CENTER, p5.CENTER);
+                keyboardArrs.forEach((row, rowNum) => {
+                    row.forEach((letter, letterNum) => {
+                        p5.stroke(0);
+                        p5.strokeWeight(1);
+                        p5.fill(255);
+                        const keypos = {
+                            x: p5.width/2+(letterNum-(row.length/2))*sizeOfInputArea/4,
+                            y: p5.height/2-sizeOfInputArea/2+rowNum*sizeOfInputArea/4,
+                            w: sizeOfInputArea/4,
+                            h: sizeOfInputArea/4
+                        }
+                        const dragOffset = doDrag ? [
+                            p5.mouseX - mouseDragStartPos[0] + mousePrevOffset[0],
+                            0 // p5.mouseY - mouseDragStartPos[1] + mousePrevOffset[1] // there should be no Y offset
+                        ] : [mousePrevOffset[0], 0];
+                        p5.rect(keypos.x + dragOffset[0]*dragSpeed,keypos.y + dragOffset[1]*dragSpeed,keypos.w,keypos.h);
+                        p5.fill(0);
+                        p5.strokeWeight(0);
+                        p5.text(letter, keypos.x + keypos.w/2 + dragOffset[0]*dragSpeed, keypos.y + keypos.h/2 + dragOffset[1]*dragSpeed);
+                    });
+                });
+
+                p5.fill(205);
+                p5.strokeWeight(1);
+                p5.rect(p5.width/2-sizeOfInputArea/2, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4);
+                p5.rect(p5.width/2-sizeOfInputArea/4, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/2, sizeOfInputArea/4);
+                p5.rect(p5.width/2+sizeOfInputArea/4, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4);
+                p5.text('`', p5.width/2-sizeOfInputArea/2 + sizeOfInputArea/8, p5.height/2 + sizeOfInputArea*3/8);
+                p5.text('_', p5.width/2-sizeOfInputArea/4 + sizeOfInputArea/4, p5.height/2 + sizeOfInputArea*3/8);
+                p5.text('`', p5.width/2+sizeOfInputArea/4 + sizeOfInputArea/8, p5.height/2 + sizeOfInputArea*3/8);
+                p5.strokeWeight(0);
+
+                // p5.fill(200);
+                // p5.text(String.fromCharCode(currentLetter), p5.width/2-sizeOfInputArea/2+sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2); //draw current letter
+                
+                //undetectable white canvas
+                p5.fill(255);
+                p5.rect(0, 0, p5.width, p5.height/2-sizeOfInputArea/2);
+                p5.rect(0, p5.height/2+sizeOfInputArea/2, p5.width, p5.height/2-sizeOfInputArea/2);
+                p5.rect(0, p5.height/2-sizeOfInputArea/2-whiteoutBuf/2, p5.width/2-sizeOfInputArea/2, sizeOfInputArea + whiteoutBuf);
+                p5.rect(p5.width/2+sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2-whiteoutBuf/2, p5.width/2-sizeOfInputArea/2, sizeOfInputArea + whiteoutBuf);
+
                 //you can very slightly adjust the position of the target/entered phrases and next button
                 p5.textAlign(p5.LEFT); //align the text left
                 p5.fill(128);
@@ -101,15 +180,6 @@ export default function Proto8(props: {
                 p5.rect(window.innerWidth - 200, window.innerHeight - 200, 200, 200); //draw next button
                 p5.fill(255);
                 p5.text("NEXT > ", window.innerWidth - 150, window.innerHeight - 150); //draw next label
-
-                //my draw code that you should replace.
-                p5.fill(255, 0, 0); //red button
-                p5.rect(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw left red button
-                p5.fill(0, 255, 0); //green button
-                p5.rect(p5.width/2-sizeOfInputArea/2+sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw right green button
-                p5.textAlign(p5.CENTER);
-                p5.fill(200);
-                p5.text(String.fromCharCode(currentLetter), p5.width/2, p5.height/2-sizeOfInputArea/4); //draw current letter
             }
         }
 
@@ -117,35 +187,66 @@ export default function Proto8(props: {
         {
             return (p5.mouseX > x && p5.mouseX<x+w && p5.mouseY>y && p5.mouseY<y+h); //check to see if it is in button bounds
         }
+        
+        function isInBounds() {
+            return didMouseClick(
+                p5.width/2-sizeOfInputArea/2,
+                p5.height/2-sizeOfInputArea/2,
+                sizeOfInputArea,
+                sizeOfInputArea*.75
+            );
+        }
+
+        p5.mouseReleased = () => {
+            if (doDrag) {
+                mousePrevOffset[0] += p5.mouseX - mouseDragStartPos[0];
+                mousePrevOffset[1] += p5.mouseY - mouseDragStartPos[1];
+            }
+
+            if (isInBounds() && !wasOnceDrag && !wentOutOfBounds) {
+                let charToAdd = '';
+                for (let rowNum = 0; rowNum < keyboardArrs.length && charToAdd === ''; ++rowNum) {
+                    const row = keyboardArrs[rowNum];
+                    for (let letterNum = 0; letterNum < row.length && charToAdd === ''; ++letterNum) {
+                        const letter = row[letterNum];
+                        const keypos = {
+                            x: p5.width/2+(letterNum-(row.length/2))*sizeOfInputArea/4,
+                            y: p5.height/2-sizeOfInputArea/2+rowNum*sizeOfInputArea/4,
+                            w: sizeOfInputArea/4,
+                            h: sizeOfInputArea/4
+                        };
+                        const dragOffset = doDrag ? [
+                            p5.mouseX - mouseDragStartPos[0] + mousePrevOffset[0],
+                            0 // p5.mouseY - mouseDragStartPos[1] + mousePrevOffset[1] // there should be no Y offset
+                        ] : [mousePrevOffset[0], 0];
+                        if (didMouseClick(keypos.x + dragOffset[0]*dragSpeed,keypos.y + dragOffset[1]*dragSpeed,keypos.w,keypos.h)) {
+                            charToAdd = letter;
+                        }
+                    }
+                }
+                currentTyped += charToAdd;
+            }
+
+            if (
+                didMouseClick(p5.width/2-sizeOfInputArea/2, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4) ||
+                didMouseClick(p5.width/2+sizeOfInputArea/4, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4)
+            ) {
+                currentTyped = currentTyped.substring(0, currentTyped.length - 1);
+            }
+            if (didMouseClick(p5.width/2-sizeOfInputArea/4, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/2, sizeOfInputArea/4)) {
+                currentTyped += ' ';
+            }
+            
+            mouseDragStartPos = [-1, -1];
+            wasOnceDrag = false;
+            wentOutOfBounds = false;
+        }
 
 
         //you can replace all of this logic.
         p5.mousePressed = () => {
-            if (didMouseClick(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2)) //check if click in left button
-            {
-                if (currentLetter<=95) //wrap around to z
-                currentLetter = 'z'.charCodeAt(0);
-            else
-                currentLetter--;
-            }
-
-            if (didMouseClick(p5.width/2-sizeOfInputArea/2+sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2)) //check if click in right button
-            {
-
-                if (currentLetter>=122) //wrap back to space (aka underscore)
-                currentLetter = '_'.charCodeAt(0);
-            else
-                currentLetter++;
-            }
-
-            if (didMouseClick(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2, sizeOfInputArea, sizeOfInputArea/2)) //check if click occured in letter area
-            {
-                if (currentLetter=='_'.charCodeAt(0)) //if underscore, consider that a space bar
-                currentTyped = currentTyped + " ";
-                else if (currentLetter=='`'.charCodeAt(0) && currentTyped.length>0) //if `, treat that as a delete command
-                currentTyped = currentTyped.substring(0, currentTyped.length-1);
-                else if (currentLetter!='`'.charCodeAt(0)) //if not any of the above cases, add the current letter to the typed string
-                currentTyped = currentTyped + String.fromCharCode(currentLetter);
+            if (isInBounds()) {
+                mouseDragStartPos = [p5.mouseX, p5.mouseY];
             }
 
             //You are allowed to have a next button outside the 1" area
