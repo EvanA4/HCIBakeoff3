@@ -2,7 +2,18 @@ import { computeLevenshteinDistance } from "@/utils/levenshtein";
 import { phrases } from "@/utils/phrases";
 import p5 from "p5";
 
-export default function Proto12(props: {
+// QWERTY keyboard keys
+type Key = {
+    label: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    isSpace: boolean;
+    isDelete: boolean;
+}
+
+export default function Proto4(props: {
     dpi: number
 }) {
     const protoFn = (p5: p5) => {
@@ -24,8 +35,133 @@ export default function Proto12(props: {
         let currentPhrase = ""; //the current target phrase
         let currentTyped = ""; //what the user has typed so far
 
-        //Variables for my silly implementation. You can delete this:
-        let currentLetter = 'a'.charCodeAt(0);
+        const keys: Key[] = [];
+        let pressedKey: Key | null = null;
+
+        // build keyboard layout
+        function buildKeyboard() {
+            keys.length = 0;
+
+            const watchX = (p5.width - sizeOfInputArea) / 2;
+            const watchY = (p5.height - sizeOfInputArea) / 2;
+            const keyWidth = sizeOfInputArea / 9;
+            const keyHeight = sizeOfInputArea / 4;
+
+            const row1 = "QWERTYUIO";
+            const row2 = "ASDFGHJKL";
+            const row3 = "ZXCVBNMP";
+
+            // Row 1
+            for (let i = 0; i < row1.length; i++) {
+                const x = watchX + i * keyWidth;
+                const y = watchY;
+                keys.push({
+                    label: row1[i],
+                    x,
+                    y,
+                    w: keyWidth,
+                    h: keyHeight,
+                    isSpace: false,
+                    isDelete: false,
+                });
+            }
+
+            // Row 2
+            for (let i = 0; i < row2.length; i++) {
+                const x = watchX * 1 + i * keyWidth;
+                const y = watchY + keyHeight;
+                keys.push({
+                    label: row2[i],
+                    x,
+                    y,
+                    w: keyWidth,
+                    h: keyHeight,
+                    isSpace: false,
+                    isDelete: false,
+                });
+            }
+
+            // Row 3
+            for (let i = 0; i < row3.length; i++) {
+                const x = watchX * 1 + i * keyWidth;
+                const y = watchY + 2 * keyHeight;
+                keys.push({
+                    label: row3[i],
+                    x,
+                    y,
+                    w: keyWidth,
+                    h: keyHeight,
+                    isSpace: false,
+                    isDelete: false,
+                });
+            }
+
+            // Row 4
+            const y4 = watchY + 3 * keyHeight;
+
+            // Space
+            const spaceW = keyWidth * 6;
+            keys.push({
+                label: "space",
+                x: watchX,
+                y: y4,
+                w: spaceW,
+                h: keyHeight,
+                isSpace: true,
+                isDelete: false,
+            });
+
+            // Delete
+            const backW = keyWidth * 3;
+            const backX = watchX + sizeOfInputArea - backW;
+            keys.push({
+                label: "del",
+                x: backX,
+                y: y4,
+                w: backW,
+                h: keyHeight,
+                isSpace: false,
+                isDelete: true,
+            });
+        }
+
+        function drawKey(k: Key, enlarged: boolean) {
+            let drawW = k.w;
+            let drawH = k.h;
+            let drawX = k.x;
+            let drawY = k.y;
+        
+            if (enlarged) {
+                const scale = 1.5;
+                drawW *= scale;
+                drawH *= scale;
+                drawX -= (drawW - k.w) / 2;
+                drawY -= (drawH - k.h) / 2;
+            }
+        
+            // color logic
+            if (k.isDelete) p5.fill(200, 100, 100);
+            else if (k.isSpace) p5.fill(200);
+            else p5.fill(240);
+        
+            p5.stroke(0.1);
+            p5.rect(drawX, drawY, drawW, drawH);
+            p5.noStroke();
+            p5.fill(0);
+            p5.text(k.label, drawX + drawW / 2, drawY + drawH / 2);
+        }
+
+        function drawKeyboard() {
+            p5.textAlign(p5.CENTER, p5.CENTER);
+
+            for (const k of keys) {
+                if (k !== pressedKey || k.isSpace || k.isDelete) drawKey(k, false);
+            }
+
+            if (pressedKey && !pressedKey.isSpace && !pressedKey.isDelete) {
+                drawKey(pressedKey, true);
+            }
+        }
 
         //You can add stuff in here. This is just a basic implementation.
         p5.setup = () => {
@@ -40,6 +176,8 @@ export default function Proto12(props: {
                 phrases[i] = phrases[r];
                 phrases[r] = temp;
             }
+
+            buildKeyboard();
         }
 
         //You can modify stuff in here. This is just a basic implementation.
@@ -102,14 +240,7 @@ export default function Proto12(props: {
                 p5.fill(255);
                 p5.text("NEXT > ", window.innerWidth - 150, window.innerHeight - 150); //draw next label
 
-                //my draw code that you should replace.
-                p5.fill(255, 0, 0); //red button
-                p5.rect(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw left red button
-                p5.fill(0, 255, 0); //green button
-                p5.rect(p5.width/2-sizeOfInputArea/2+sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw right green button
-                p5.textAlign(p5.CENTER);
-                p5.fill(200);
-                p5.text(String.fromCharCode(currentLetter), p5.width/2, p5.height/2-sizeOfInputArea/4); //draw current letter
+                drawKeyboard();
             }
         }
 
@@ -118,39 +249,33 @@ export default function Proto12(props: {
             return (p5.mouseX > x && p5.mouseX<x+w && p5.mouseY>y && p5.mouseY<y+h); //check to see if it is in button bounds
         }
 
-
-        //you can replace all of this logic.
+        // magnify the button being pressed while it is held down
         p5.mousePressed = () => {
-            if (didMouseClick(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2)) //check if click in left button
-            {
-                if (currentLetter<=95) //wrap around to z
-                currentLetter = 'z'.charCodeAt(0);
-            else
-                currentLetter--;
+            if (startTime != 0 && finishTime == 0) {
+                for (const k of keys) {
+                    if (didMouseClick(k.x, k.y, k.w, k.h)) {
+                        pressedKey = k; 
+                        break; 
+                    }
+                }
             }
+        }
 
-            if (didMouseClick(p5.width/2-sizeOfInputArea/2+sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2)) //check if click in right button
-            {
+        p5.mouseReleased = () => {
+            if (startTime != 0 && finishTime == 0 && pressedKey) {
+                if (pressedKey.isSpace) {
+                    currentTyped += " ";
+                } else if (pressedKey.isDelete) {
+                    if (currentTyped.length > 0) {
+                        currentTyped = currentTyped.substring(0, currentTyped.length - 1);
+                    }
+                } else {
+                    currentTyped += pressedKey.label.toLowerCase();
+                }
 
-                if (currentLetter>=122) //wrap back to space (aka underscore)
-                currentLetter = '_'.charCodeAt(0);
-            else
-                currentLetter++;
+                pressedKey = null;
             }
-
-            if (didMouseClick(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2, sizeOfInputArea, sizeOfInputArea/2)) //check if click occured in letter area
-            {
-                if (currentLetter=='_'.charCodeAt(0)) //if underscore, consider that a space bar
-                currentTyped = currentTyped + " ";
-                else if (currentLetter=='`'.charCodeAt(0) && currentTyped.length>0) //if `, treat that as a delete command
-                currentTyped = currentTyped.substring(0, currentTyped.length-1);
-                else if (currentLetter!='`'.charCodeAt(0)) //if not any of the above cases, add the current letter to the typed string
-                currentTyped = currentTyped + String.fromCharCode(currentLetter);
-            }
-
-            //You are allowed to have a next button outside the 1" area
-            if (didMouseClick(window.innerWidth - 200, window.innerHeight - 200, 200, 200)) //check if click is in next button
-            {
+            if (didMouseClick(window.innerWidth - 200, window.innerHeight - 200, 200, 200)) {
                 nextTrial(); //if so, advance to next trial
             }
         }
