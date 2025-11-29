@@ -142,7 +142,13 @@ export default function Proto14(props: {
                     if (p5.mouseIsPressed && didMouseClick(keypos[0], keypos[1], keypos[2], keypos[3])) {
                         p5.fill(0, 125, 205)
                     } else {
-                        p5.fill(205);
+                        if (metaBtns[i] === '<' || metaBtns[i] === '>') {
+                            p5.fill(205);
+                        } else if (metaBtns[i] === '_') {
+                            p5.fill(235);
+                        } else {
+                            p5.fill(255, 200, 200);
+                        }
                     }
                     p5.rect(keypos[0], keypos[1], keypos[2], keypos[3]);
                     p5.text(metaBtns[i], keypos[0] + keypos[2]/2, keypos[1] + keypos[3]/2);
