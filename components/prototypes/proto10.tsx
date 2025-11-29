@@ -2,13 +2,28 @@ import { computeLevenshteinDistance } from "@/utils/levenshtein";
 import { phrases } from "@/utils/phrases";
 import p5 from "p5";
 
+// QWERTY keyboard keys
+type Key = {
+    label: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    baseX: number;
+    baseY: number;
+    baseW: number;
+    baseH: number;
+    row: number;
+    col: number;
+    isSpace: boolean;
+    isDelete: boolean;
+}
+
 export default function Proto10(props: {
     dpi: number
 }) {
     const protoFn = (p5: p5) => {
         /* START OF PROTOTYPE CODE */
-        
-
 
         const DPIofYourDeviceScreen = props.dpi; //you will need to measure or look up the DPI or PPI of your device/browser to make sure you get the right scale!!
         const sizeOfInputArea = DPIofYourDeviceScreen*1; //aka, 1.0 inches square!
@@ -24,8 +39,268 @@ export default function Proto10(props: {
         let currentPhrase = ""; //the current target phrase
         let currentTyped = ""; //what the user has typed so far
 
-        //Variables for my silly implementation. You can delete this:
-        let currentLetter = 'a'.charCodeAt(0);
+        let pressStartTime = 0;
+        let pressedKey: Key | null = null;
+        let longPressFired = false;
+        const LONG_PRESS_MS = 300;
+
+        let magnified = false;
+        let magnifiedCenter: Key | null = null;
+
+        const keys: Key[] = [];
+
+        let watchX = 0;
+        let watchY = 0;
+        let keyWidth = 0;
+        let keyHeight = 0;
+
+        // build keyboard layout
+        function buildKeyboard() {
+            keys.length = 0;
+
+            watchX = (p5.width - sizeOfInputArea) / 2;
+            watchY = (p5.height - sizeOfInputArea) / 2;
+            keyWidth = sizeOfInputArea / 9;
+            keyHeight = sizeOfInputArea / 4;
+
+            const row1 = "QWERTYUIO";
+            const row2 = "PASDFGHJK";
+            const row3 = "LZXCVBNM";
+
+            // Row 1
+            for (let i = 0; i < row1.length; i++) {
+                const x = watchX + i * keyWidth;
+                const y = watchY;
+                keys.push({
+                    label: row1[i],
+                    x,
+                    y,
+                    w: keyWidth,
+                    h: keyHeight,
+                    baseX: x,
+                    baseY: y,
+                    baseW: keyWidth,
+                    baseH: keyHeight,
+                    row: 0,
+                    col: i,
+                    isSpace: false,
+                    isDelete: false,
+                });
+            }
+
+            // Row 2
+            for (let i = 0; i < row2.length; i++) {
+                const x = watchX * 1 + i * keyWidth;
+                const y = watchY + keyHeight;
+                keys.push({
+                    label: row2[i],
+                    x,
+                    y,
+                    w: keyWidth,
+                    h: keyHeight,
+                    baseX: x,
+                    baseY: y,
+                    baseW: keyWidth,
+                    baseH: keyHeight,
+                    row: 1,
+                    col: i,
+                    isSpace: false,
+                    isDelete: false,
+                });
+            }
+
+            // Row 3
+            for (let i = 0; i < row3.length; i++) {
+                const x = watchX * 1 + i * keyWidth;
+                const y = watchY + 2 * keyHeight;
+                keys.push({
+                    label: row3[i],
+                    x,
+                    y,
+                    w: keyWidth,
+                    h: keyHeight,
+                    baseX: x,
+                    baseY: y,
+                    baseW: keyWidth,
+                    baseH: keyHeight,
+                    row: 2,
+                    col: i,
+                    isSpace: false,
+                    isDelete: false,
+                });
+            }
+
+            // Row 4
+            const y4 = watchY + 3 * keyHeight;
+
+            // Space
+            const spaceW = keyWidth * 6;
+            const spaceX = watchX + (sizeOfInputArea - spaceW) / 2;
+            keys.push({
+                label: "_",
+                x: spaceX,
+                y: y4,
+                w: spaceW,
+                h: keyHeight,
+                baseX: spaceX,
+                baseY: y4,
+                baseW: spaceW,
+                baseH: keyHeight,
+                row: 3,
+                col: 0,
+                isSpace: true,
+                isDelete: false,
+            });
+
+            // Delete
+            const backW = keyWidth * 2;
+            const backX = watchX + sizeOfInputArea - backW;
+            keys.push({
+                label: "`",
+                x: backX,
+                y: y4,
+                w: backW,
+                h: keyHeight,
+                baseX: backX,
+                baseY: y4,
+                baseW: backW,
+                baseH: keyHeight,
+                row: 3,
+                col: 1,
+                isSpace: false,
+                isDelete: true,
+            });
+        }
+
+        function hitRectangle(px: number, py: number, x: number, y: number, w: number, h:number) {
+            return (px > x && px < x + w && py > y && py < y + h);
+        }
+
+        function isNeighbor(center: Key, k: Key) {
+            const dr = Math.abs(center.row - k.row);
+            const dc = Math.abs(center.col - k.col);
+            return dr <= 1 && dc <= 1;
+        }
+
+        function getKeyRectangle(k: Key, clusterRects?: Map<Key, Rectangle>) {
+            if (magnified && clusterRects && clusterRects.has(k)) {
+                return clusterRects.get(k)!;
+            }
+
+            return { x: k.baseX, y: k.baseY, w: k.baseW, h: k.baseH };
+        }
+
+        function hitKeyAt(px: number, py: number): Key | null {
+            const center = magnified && magnifiedCenter ? magnifiedCenter : null;
+            const clusterRects = center ? buildClusterRects(center) : undefined;
+
+            if (magnified && clusterRects) {
+                for (const k of keys) {
+                    if (!clusterRects.has(k)) continue;
+                    const r = clusterRects.get(k)!;
+                    if (px > r.x && px < r.x + r.w && py > r.y && py < r.y + r.h) {
+                        return k; 
+                    }
+                }
+            }
+
+            for (const k of keys) {
+                const r = { x: k.baseX, y: k.baseY, w: k.baseW, h: k.baseH };
+                if (px > r.x && px < r.x + r.w && py > r.y && py < r.y + r.h) {
+                    return k;
+                }
+            }
+
+            return null;
+        }
+
+        function drawKeyboard() {
+            p5.textAlign(p5.CENTER, p5.CENTER);
+
+            const ctx = p5.drawingContext as CanvasRenderingContext2D;
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(watchX, watchY, sizeOfInputArea, sizeOfInputArea);
+            ctx.clip();
+
+            const center = magnified && magnifiedCenter ? magnifiedCenter : null;
+            const clusterRects = center ? buildClusterRects(center) : undefined;
+
+            for (const k of keys) {
+                if (!k) continue;
+                const label = k.label ?? "";
+                const r = getKeyRectangle(k, undefined);
+
+                if (k.isDelete) {
+                    p5.fill(200, 100, 100);
+                } else if (k.isSpace) {
+                    p5.fill(200);
+                } else {
+                    p5.fill(240);
+                }
+                p5.rect(r.x, r.y, r.w, r.h);
+                p5.fill(0);
+                p5.text(label.toString(), r.x + r.w / 2, r.y + r.h / 2);
+            }
+
+            if (center && clusterRects) {
+                for (const k of keys) {
+                    if (!clusterRects.has(k)) continue;
+
+                    const label = k.label ?? "";
+                    const r = getKeyRectangle(k, clusterRects);
+
+                    if (k.isDelete) {
+                        p5.fill(200, 100, 100);
+                    } else if (k.isSpace) {
+                        p5.fill(200);
+                    } else {
+                        p5.fill(240);
+                    }
+                    p5.rect(r.x, r.y, r.w, r.h);
+                    p5.fill(0);
+                    p5.text(label.toString(), r.x + r.w / 2, r.y + r.h / 2);
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function commitKeyPress(k: Key) {
+            if (k.isSpace) {
+                currentTyped += " ";
+            } else if (k.isDelete) {
+                if (currentTyped.length > 0) {
+                    currentTyped = currentTyped.substring(0, currentTyped.length - 1);
+                }
+            } else {
+                currentTyped += k.label.toLowerCase();
+            }
+        }
+
+        type Rectangle = { x: number; y: number; w: number; h: number };
+
+        function buildClusterRects(center: Key): Map<Key, Rectangle> {
+            const rects = new Map<Key, Rectangle>();
+            const bigW = sizeOfInputArea / 3.2;
+            const bigH = sizeOfInputArea / 3.2;
+            const cx = watchX + sizeOfInputArea / 2;
+            const cy = watchY + sizeOfInputArea / 2;
+
+            for (const k of keys) {
+                if (!isNeighbor(center, k)) continue;
+
+                const dr = Math.max(-1, Math.min(1, k.row - center.row));
+                const dc = Math.max(-1, Math.min(1, k.col - center.col));
+
+                const x = cx + dc * bigW - bigW / 2;
+                const y = cy + dr * bigH - bigH / 2;
+
+                rects.set(k, { x, y, w: bigW, h: bigH });
+            }
+
+            return rects;
+        }
 
         //You can add stuff in here. This is just a basic implementation.
         p5.setup = () => {
@@ -40,6 +315,8 @@ export default function Proto10(props: {
                 phrases[i] = phrases[r];
                 phrases[r] = temp;
             }
+
+            buildKeyboard();
         }
 
         //You can modify stuff in here. This is just a basic implementation.
@@ -102,58 +379,59 @@ export default function Proto10(props: {
                 p5.fill(255);
                 p5.text("NEXT > ", window.innerWidth - 150, window.innerHeight - 150); //draw next label
 
-                //my draw code that you should replace.
-                p5.fill(255, 0, 0); //red button
-                p5.rect(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw left red button
-                p5.fill(0, 255, 0); //green button
-                p5.rect(p5.width/2-sizeOfInputArea/2+sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw right green button
-                p5.textAlign(p5.CENTER);
-                p5.fill(200);
-                p5.text(String.fromCharCode(currentLetter), p5.width/2, p5.height/2-sizeOfInputArea/4); //draw current letter
+                if (!magnified && pressedKey && p5.mouseIsPressed && !longPressFired) {
+                    const heldFor = p5.millis() - pressStartTime;
+                    if (heldFor >= LONG_PRESS_MS) {
+                        magnified = true;
+                        magnifiedCenter = pressedKey;
+                        longPressFired = true;
+                    }
+                }
+                drawKeyboard();
             }
         }
 
-        function didMouseClick(x: number, y: number, w: number, h: number) //simple function to do hit testing
-        {
-            return (p5.mouseX > x && p5.mouseX<x+w && p5.mouseY>y && p5.mouseY<y+h); //check to see if it is in button bounds
-        }
-
-
-        //you can replace all of this logic.
         p5.mousePressed = () => {
-            if (didMouseClick(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2)) //check if click in left button
-            {
-                if (currentLetter<=95) //wrap around to z
-                currentLetter = 'z'.charCodeAt(0);
-            else
-                currentLetter--;
+            if (startTime != 0 && finishTime == 0) {
+                if (magnified) {
+                    const k = hitKeyAt(p5.mouseX, p5.mouseY);
+                    if (k) {
+                        commitKeyPress(k);
+                        magnified = false;
+                        magnifiedCenter = null;
+                        pressedKey = null;
+                        longPressFired = false;
+                        pressStartTime = 0;
+                    }
+                    return;
+                } else {
+                    const k = hitKeyAt(p5.mouseX, p5.mouseY);
+                    if (k) {
+                        pressedKey = k;
+                        pressStartTime = p5.millis();
+                        longPressFired = false;
+                        return;
+                    }
+                }
             }
 
-            if (didMouseClick(p5.width/2-sizeOfInputArea/2+sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2)) //check if click in right button
-            {
+            // NEXT button
+            if (hitRectangle(p5.mouseX, p5.mouseY, window.innerWidth - 200, window.innerHeight - 200, 200, 200)) {
+                nextTrial();
+            }
+        };
 
-                if (currentLetter>=122) //wrap back to space (aka underscore)
-                currentLetter = '_'.charCodeAt(0);
-            else
-                currentLetter++;
+        p5.mouseReleased = () => {
+            if (startTime != 0 && finishTime == 0) {
+                if (!magnified && pressedKey && !longPressFired) {
+                    commitKeyPress(pressedKey);
+                }
             }
 
-            if (didMouseClick(p5.width/2-sizeOfInputArea/2, p5.height/2-sizeOfInputArea/2, sizeOfInputArea, sizeOfInputArea/2)) //check if click occured in letter area
-            {
-                if (currentLetter=='_'.charCodeAt(0)) //if underscore, consider that a space bar
-                currentTyped = currentTyped + " ";
-                else if (currentLetter=='`'.charCodeAt(0) && currentTyped.length>0) //if `, treat that as a delete command
-                currentTyped = currentTyped.substring(0, currentTyped.length-1);
-                else if (currentLetter!='`'.charCodeAt(0)) //if not any of the above cases, add the current letter to the typed string
-                currentTyped = currentTyped + String.fromCharCode(currentLetter);
-            }
-
-            //You are allowed to have a next button outside the 1" area
-            if (didMouseClick(window.innerWidth - 200, window.innerHeight - 200, 200, 200)) //check if click is in next button
-            {
-                nextTrial(); //if so, advance to next trial
-            }
-        }
+            pressedKey = null;
+            pressStartTime = 0;
+            longPressFired = false;
+        };
 
 
         function nextTrial() {
@@ -214,12 +492,8 @@ export default function Proto10(props: {
             currentPhrase = phrases[currTrialNum]; // load the next phrase!
             //currentPhrase = "abc"; // uncomment this to override the test phrase (useful for debugging)
         }
-
-
-
         /* END OF PROTOTYPE CODE */
     }
-
     new p5(protoFn);
     return (<></>);
 }
