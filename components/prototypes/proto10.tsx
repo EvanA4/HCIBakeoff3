@@ -326,7 +326,7 @@ export default function Proto10(props: {
             //check to see if the user finished. You can't change the score computation.
             if (finishTime!=0)
             {
-                p5.fill(0);
+                p5.fill(100);
                 p5.textAlign(p5.CENTER);
                 p5.text("Trials complete!",window.innerWidth/2,200); //output
                 p5.text("Total time taken: " + (finishTime - startTime),window.innerWidth/2,220); //output
