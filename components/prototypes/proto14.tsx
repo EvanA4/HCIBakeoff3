@@ -26,7 +26,7 @@ export default function Proto14(props: {
         while (.75*sizeOfInputArea*maxPageNum + sizeOfInputArea/4 - 10*sizeOfInputArea/4*keyWidthCoef < 0) {
             ++maxPageNum;
         }
-        let pageNum = Math.floor(maxPageNum/2);
+        let pageNum = Math.floor(maxPageNum/2)-1;
 
         const totalTrialNum = 2; //the total number of phrases to be tested - set this low for testing. Might be ~10 for the real bakeoff!
         let currTrialNum = 0; // the current trial number (indexes into trials array above)
@@ -133,16 +133,20 @@ export default function Proto14(props: {
                     });
                 });
 
-                p5.fill(205);
                 p5.strokeWeight(1);
-                p5.rect(p5.width/2-sizeOfInputArea/2, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4);
-                p5.rect(p5.width/2-sizeOfInputArea/4, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4);
-                p5.rect(p5.width/2, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4);
-                p5.rect(p5.width/2+sizeOfInputArea/4, p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4);
-                p5.text('<', p5.width/2-sizeOfInputArea/2 + sizeOfInputArea/8, p5.height/2 + sizeOfInputArea*3/8);
-                p5.text('_', p5.width/2-sizeOfInputArea/8, p5.height/2 + sizeOfInputArea*3/8);
-                p5.text('`', p5.width/2+sizeOfInputArea/8, p5.height/2 + sizeOfInputArea*3/8);
-                p5.text('>', p5.width/2+sizeOfInputArea/4 + sizeOfInputArea/8, p5.height/2 + sizeOfInputArea*3/8);
+                const metaBtns = ['<', '_', '`', '>'];
+                for (let i = 0; i < metaBtns.length; ++i) {
+                    const keypos = [
+                        p5.width/2+((i-2) * sizeOfInputArea/4), p5.height/2+sizeOfInputArea/4, sizeOfInputArea/4, sizeOfInputArea/4
+                    ];
+                    if (p5.mouseIsPressed && didMouseClick(keypos[0], keypos[1], keypos[2], keypos[3])) {
+                        p5.fill(0, 125, 205)
+                    } else {
+                        p5.fill(205);
+                    }
+                    p5.rect(keypos[0], keypos[1], keypos[2], keypos[3]);
+                    p5.text(metaBtns[i], keypos[0] + keypos[2]/2, keypos[1] + keypos[3]/2);
+                }
                 p5.strokeWeight(0);
 
                 // p5.fill(200);
