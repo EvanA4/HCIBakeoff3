@@ -1,3 +1,14 @@
+# HCI Bakeoff 3 - Team 3
+
+This is the code repository for COSC 559 Bakeoff 3 Team 3. The website is accessible at [this URL](https://hci-bakeoff3.vercel.app/). 
+
+To use this website
+
+1. Enter your screen DPI in the top right corner of the screen
+2. Click on your desired prototype to test it out.
+
+## For Developers
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
